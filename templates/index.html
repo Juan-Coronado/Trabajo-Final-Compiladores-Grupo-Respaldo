@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Compilador de Integrales Definidas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <h1>Compilador de Integrales Definidas</h1>
+        <p>Analisis lexico, sintactico, semantico, AST y evaluacion numerica.</p>
+      </div>
+      <div class="header-actions">
+        <button id="exampleBtn" class="ghost-button" type="button">Ejemplo</button>
+        <button id="clearBtn" class="ghost-button" type="button">Limpiar</button>
+        <button id="analyzeBtn" class="primary-button" type="button">Analizar</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="editor-panel">
+        <div class="panel-title">
+          <h2>Entrada</h2>
+          <span class="syntax-label">Formato: INT[limiteA,limiteB](expresion) dx</span>
+        </div>
+        <textarea id="sourceInput" spellcheck="false">INT[0,1](x^2 + sin(x)) dx</textarea>
+        <div class="input-help">
+          Funciones permitidas: sin, cos, tan, ln, sqrt, exp. Constantes: pi, e.
+        </div>
+      </section>
+
+      <section class="status-grid" aria-label="Estados del compilador">
+        <article class="status-card" data-phase="lexico">
+          <span>Lexico</span>
+          <strong id="lexStatus">Sin ejecutar</strong>
+        </article>
+        <article class="status-card" data-phase="sintactico">
+          <span>Sintactico</span>
+          <strong id="syntaxStatus">Sin ejecutar</strong>
+        </article>
+        <article class="status-card" data-phase="semantico">
+          <span>Semantico</span>
+          <strong id="semanticStatus">Sin ejecutar</strong>
+        </article>
+        <article class="status-card result-card">
+          <span>Resultado</span>
+          <strong id="resultStatus">Pendiente</strong>
+        </article>
+      </section>
+
+      <section class="output-panel tokens-panel">
+        <div class="panel-title">
+          <h2>Tokens reconocidos</h2>
+          <span id="tokenCount">0 tokens</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Lexema</th>
+                <th>Linea</th>
+                <th>Columna</th>
+              </tr>
+            </thead>
+            <tbody id="tokensBody">
+              <tr>
+                <td colspan="4" class="empty">Ejecuta el analisis para ver tokens.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="output-panel errors-panel">
+        <div class="panel-title">
+          <h2>Errores</h2>
+          <span id="errorCount">Sin errores</span>
+        </div>
+        <div id="errorsList" class="error-list">
+          <p class="empty">No hay errores porque aun no se ejecuto el compilador.</p>
+        </div>
+      </section>
+
+      <section class="output-panel ast-panel">
+        <div class="panel-title">
+          <h2>AST</h2>
+          <span>Arbol de sintaxis abstracta</span>
+        </div>
+        <pre id="astOutput" class="code-block">Sin AST generado.</pre>
+      </section>
+
+      <section class="output-panel intermediate-panel">
+        <div class="panel-title">
+          <h2>Codigo intermedio</h2>
+          <span>Representacion normalizada</span>
+        </div>
+        <pre id="intermediateOutput" class="code-block">Sin codigo intermedio.</pre>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>
