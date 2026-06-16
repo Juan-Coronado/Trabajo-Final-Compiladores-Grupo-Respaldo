@@ -7,10 +7,20 @@ const clearBtn = document.querySelector("#clearBtn");
 const tokensBody = document.querySelector("#tokensBody");
 const tokenCount = document.querySelector("#tokenCount");
 const errorCount = document.querySelector("#errorCount");
+const errorBadge = document.querySelector("#errorBadge");
 const errorsList = document.querySelector("#errorsList");
 const astOutput = document.querySelector("#astOutput");
+const astTree = document.querySelector("#astTree");
+const treeTab = document.querySelector("#treeTab");
+const jsonTab = document.querySelector("#jsonTab");
 const intermediateOutput = document.querySelector("#intermediateOutput");
+const codeLines = document.querySelector("#codeLines");
 const resultStatus = document.querySelector("#resultStatus");
+const resultDetail = document.querySelector("#resultDetail");
+const resultFormula = document.querySelector("#resultFormula");
+const cursorInfo = document.querySelector("#cursorInfo");
+const copyAstBtn = document.querySelector("#copyAstBtn");
+const copyIntermediateBtn = document.querySelector("#copyIntermediateBtn");
 
 const phaseElements = {
   lexico: document.querySelector("[data-phase='lexico']"),
@@ -24,15 +34,31 @@ const phaseLabels = {
   semantico: document.querySelector("#semanticStatus"),
 };
 
+const phaseDetails = {
+  lexico: document.querySelector("#lexDetail"),
+  sintactico: document.querySelector("#syntaxDetail"),
+  semantico: document.querySelector("#semanticDetail"),
+};
+
 analyzeBtn.addEventListener("click", analyze);
 exampleBtn.addEventListener("click", () => {
   sourceInput.value = sampleSource;
+  updateCursorInfo();
   analyze();
 });
 clearBtn.addEventListener("click", () => {
   sourceInput.value = "";
+  updateCursorInfo();
   renderEmpty();
 });
+sourceInput.addEventListener("keyup", updateCursorInfo);
+sourceInput.addEventListener("click", updateCursorInfo);
+treeTab.addEventListener("click", () => setAstMode("tree"));
+jsonTab.addEventListener("click", () => setAstMode("json"));
+copyAstBtn.addEventListener("click", () => navigator.clipboard?.writeText(astOutput.textContent));
+copyIntermediateBtn.addEventListener("click", () => navigator.clipboard?.writeText(intermediateOutput.textContent));
+
+updateCursorInfo();
 
 async function analyze() {
   setLoading();
@@ -47,38 +73,54 @@ async function analyze() {
 
 function setLoading() {
   resultStatus.textContent = "Analizando...";
+  resultDetail.textContent = "Procesando fases";
 }
 
 function renderResult(data) {
-  renderPhases(data.phases);
+  renderPhases(data.phases, data.tokens.length);
   renderTokens(data.tokens);
-  renderErrors(data.errors);
+  renderErrors(data);
+  renderAst(data.ast);
 
-  astOutput.textContent = data.ast ? JSON.stringify(data.ast, null, 2) : "Sin AST generado.";
-  intermediateOutput.textContent = buildIntermediateText(data);
+  const intermediateText = buildIntermediateText(data);
+  intermediateOutput.textContent = intermediateText;
+  renderCodeLines(intermediateText);
 
   if (data.valid && data.evaluation) {
+    resultFormula.textContent = `∫[${data.ast.lower_limit}, ${data.ast.upper_limit}] f(x) dx`;
     resultStatus.textContent = data.evaluation.decimal;
+    resultDetail.textContent = data.evaluation.method;
   } else if (data.errors.length > 0) {
+    resultFormula.textContent = "∫ f(x) dx";
     resultStatus.textContent = "Revisar errores";
+    resultDetail.textContent = "El analisis no finalizo";
   } else {
+    resultFormula.textContent = "∫ f(x) dx";
     resultStatus.textContent = "Pendiente";
+    resultDetail.textContent = "Resultado decimal";
   }
 }
 
-function renderPhases(phases) {
+function renderPhases(phases, tokensLength) {
   Object.entries(phases).forEach(([phase, info]) => {
     const card = phaseElements[phase];
     const label = phaseLabels[phase];
+    const detail = phaseDetails[phase];
     card.classList.remove("ok", "error");
+
     if (info.status === "valido") {
       card.classList.add("ok");
       label.textContent = "Valido";
+      if (phase === "lexico") detail.textContent = `${tokensLength} tokens reconocidos`;
+      if (phase === "sintactico") detail.textContent = "Estructura correcta";
+      if (phase === "semantico") detail.textContent = "Integrando respecto a x";
     } else if (info.status === "omitido") {
       label.textContent = "Omitido";
+      detail.textContent = info.reason || "Fase omitida";
     } else {
       card.classList.add("error");
       label.textContent = `${info.count} error${info.count === 1 ? "" : "es"}`;
+      detail.textContent = "Revisar detalle";
     }
   });
 }
@@ -86,12 +128,13 @@ function renderPhases(phases) {
 function renderTokens(tokens) {
   tokenCount.textContent = `${tokens.length} token${tokens.length === 1 ? "" : "s"}`;
   if (!tokens.length) {
-    tokensBody.innerHTML = `<tr><td colspan="4" class="empty">No se reconocieron tokens.</td></tr>`;
+    tokensBody.innerHTML = `<tr><td colspan="5" class="empty">No se reconocieron tokens.</td></tr>`;
     return;
   }
   tokensBody.innerHTML = tokens
     .map(
-      (token) => `<tr>
+      (token, index) => `<tr>
+        <td>${index + 1}</td>
         <td>${escapeHtml(token.type)}</td>
         <td>${escapeHtml(token.lexeme)}</td>
         <td>${token.line}</td>
@@ -101,44 +144,158 @@ function renderTokens(tokens) {
     .join("");
 }
 
-function renderErrors(errors) {
+function renderErrors(data) {
+  const errors = data.errors || [];
+  errorBadge.textContent = errors.length;
   if (!errors.length) {
     errorCount.textContent = "Sin errores";
-    errorsList.innerHTML = `<p class="empty">No se detectaron errores.</p>`;
-    return;
+  } else {
+    errorCount.textContent = `${errors.length} error${errors.length === 1 ? "" : "es"}`;
   }
-  errorCount.textContent = `${errors.length} error${errors.length === 1 ? "" : "es"}`;
-  errorsList.innerHTML = errors
-    .map((error) => {
-      const location =
-        error.line && error.column ? `Linea ${error.line}, columna ${error.column}` : "Sin ubicacion";
-      return `<article class="error-item">
-        <strong>${escapeHtml(error.phase)}</strong>
-        <span>${escapeHtml(location)}: ${escapeHtml(error.message)}</span>
+
+  const groups = ["lexico", "sintactico", "semantico"];
+  const labels = {
+    lexico: "Lexicos",
+    sintactico: "Sintacticos",
+    semantico: "Semanticos",
+  };
+
+  errorsList.innerHTML = groups
+    .map((phase) => {
+      const phaseErrors = errors.filter((error) => error.phase === phase);
+      const stateClass = phaseErrors.length ? "error" : "pending";
+      const content = phaseErrors.length
+        ? phaseErrors
+            .map((error) => {
+              const location =
+                error.line && error.column ? `Linea ${error.line}, columna ${error.column}` : "Sin ubicacion";
+              return `<p>${escapeHtml(location)}: ${escapeHtml(error.message)}</p>`;
+            })
+            .join("")
+        : `<p>No hay errores ${labels[phase].toLowerCase()}.</p>`;
+
+      return `<article class="phase-error-card ${stateClass}">
+        <div><strong>${labels[phase]} (${phaseErrors.length})</strong><span>⌄</span></div>
+        ${content}
       </article>`;
     })
     .join("");
 }
 
+function renderAst(ast) {
+  astOutput.textContent = ast ? JSON.stringify(ast, null, 2) : "Sin AST generado.";
+  astTree.textContent = ast ? buildAstTree(ast) : "Sin arbol generado.";
+  astTree.classList.toggle("empty", !ast);
+}
+
+function buildAstTree(ast) {
+  const lines = ["Integral"];
+  lines.push(`├── limite_inferior: ${ast.lower_limit}`);
+  lines.push(`├── limite_superior: ${ast.upper_limit}`);
+  lines.push(`├── variable: ${ast.variable}`);
+  lines.push("└── expresion:");
+  lines.push(...nodeTree(ast.expression, "    "));
+  return lines.join("\n");
+}
+
+function nodeTree(node, prefix) {
+  if (!node) return [`${prefix}└── <vacio>`];
+  if (node.type === "BinaryExpression") {
+    return [
+      `${prefix}└── (${node.operator})`,
+      ...nodeTree(node.left, `${prefix}    ├── `),
+      ...nodeTree(node.right, `${prefix}    └── `),
+    ];
+  }
+  if (node.type === "UnaryExpression") {
+    return [`${prefix}└── (${node.operator})`, ...nodeTree(node.operand, `${prefix}    └── `)];
+  }
+  if (node.type === "FunctionCall") {
+    return [`${prefix}└── ${node.name}`, ...nodeTree(node.argument, `${prefix}    └── `)];
+  }
+  if (node.type === "Variable") return [`${prefix}└── variable: ${node.name}`];
+  if (node.type === "Number") return [`${prefix}└── numero: ${node.value}`];
+  if (node.type === "Constant") return [`${prefix}└── constante: ${node.name}`];
+  return [`${prefix}└── ${node.type}`];
+}
+
 function buildIntermediateText(data) {
   const lines = [];
-  if (data.normalized) {
-    lines.push("Expresion normalizada:");
-    lines.push(data.normalized);
-    lines.push("");
-  }
   if (data.intermediate) {
-    lines.push("Codigo intermedio:");
-    lines.push(JSON.stringify(data.intermediate, null, 2));
+    lines.push("# Representacion en Notacion Polaca Inversa (RPN)");
+    lines.push(toRpn(data.ast.expression).join(" "));
+    lines.push("");
+    lines.push("# Representacion en 3D (Triple Direccion)");
+    lines.push("# (op, arg1, arg2)");
+    lines.push(...toTriples(data.ast.expression).lines);
+    lines.push("");
+    lines.push("# Integral definida");
+    lines.push(`INTEGRAL ${data.ast.lower_limit} ${data.ast.upper_limit} ${data.intermediate.expression} dx`);
+  } else {
+    lines.push("Sin codigo intermedio.");
   }
   if (data.evaluation) {
     lines.push("");
-    lines.push("Evaluacion:");
-    lines.push(`${data.evaluation.summary}`);
+    lines.push("# Evaluacion");
+    lines.push(`Resultado aproximado: ${data.evaluation.decimal}`);
     lines.push(`Metodo: ${data.evaluation.method}`);
     lines.push(`Subintervalos: ${data.evaluation.subintervals}`);
   }
-  return lines.length ? lines.join("\n") : "Sin codigo intermedio.";
+  return lines.join("\n");
+}
+
+function toRpn(node) {
+  if (!node) return [];
+  if (node.type === "Number") return [node.value];
+  if (node.type === "Variable") return [node.name];
+  if (node.type === "Constant") return [node.name];
+  if (node.type === "FunctionCall") return [...toRpn(node.argument), node.name];
+  if (node.type === "UnaryExpression") return [...toRpn(node.operand), `u${node.operator}`];
+  if (node.type === "BinaryExpression") return [...toRpn(node.left), ...toRpn(node.right), node.operator];
+  return [node.type];
+}
+
+function toTriples(node, state = { counter: 1, lines: [] }) {
+  function visit(current) {
+    if (current.type === "Number") return current.value;
+    if (current.type === "Variable") return current.name;
+    if (current.type === "Constant") return current.name;
+    if (current.type === "FunctionCall") {
+      const arg = visit(current.argument);
+      const temp = `t${state.counter++}`;
+      state.lines.push(`${temp} = (${current.name}, ${arg}, -)`);
+      return temp;
+    }
+    if (current.type === "UnaryExpression") {
+      const arg = visit(current.operand);
+      const temp = `t${state.counter++}`;
+      state.lines.push(`${temp} = (${current.operator}u, ${arg}, -)`);
+      return temp;
+    }
+    if (current.type === "BinaryExpression") {
+      const left = visit(current.left);
+      const right = visit(current.right);
+      const temp = `t${state.counter++}`;
+      state.lines.push(`${temp} = (${current.operator}, ${left}, ${right})`);
+      return temp;
+    }
+    return "?";
+  }
+  visit(node);
+  return state;
+}
+
+function renderCodeLines(text) {
+  const lineCount = Math.max(1, text.split("\n").length);
+  codeLines.textContent = Array.from({ length: lineCount }, (_, index) => index + 1).join("\n");
+}
+
+function setAstMode(mode) {
+  const showTree = mode === "tree";
+  astTree.classList.toggle("hidden", !showTree);
+  astOutput.classList.toggle("hidden", showTree);
+  treeTab.classList.toggle("active", showTree);
+  jsonTab.classList.toggle("active", !showTree);
 }
 
 function renderEmpty() {
@@ -146,13 +303,41 @@ function renderEmpty() {
   phaseLabels.lexico.textContent = "Sin ejecutar";
   phaseLabels.sintactico.textContent = "Sin ejecutar";
   phaseLabels.semantico.textContent = "Sin ejecutar";
+  phaseDetails.lexico.textContent = "Esperando tokens";
+  phaseDetails.sintactico.textContent = "Estructura pendiente";
+  phaseDetails.semantico.textContent = "Dominio pendiente";
+  resultFormula.textContent = "∫ f(x) dx";
   resultStatus.textContent = "Pendiente";
+  resultDetail.textContent = "Resultado decimal";
   tokenCount.textContent = "0 tokens";
-  tokensBody.innerHTML = `<tr><td colspan="4" class="empty">Ejecuta el analisis para ver tokens.</td></tr>`;
+  tokensBody.innerHTML = `<tr><td colspan="5" class="empty">Ejecuta el analisis para ver tokens.</td></tr>`;
+  errorBadge.textContent = "0";
   errorCount.textContent = "Sin errores";
-  errorsList.innerHTML = `<p class="empty">No hay errores porque aun no se ejecuto el compilador.</p>`;
+  errorsList.innerHTML = ["Lexicos", "Sintacticos", "Semanticos"]
+    .map(
+      (label) => `<article class="phase-error-card pending">
+        <div><strong>${label} (0)</strong><span>⌄</span></div>
+        <p>No hay errores ${label.toLowerCase()}.</p>
+      </article>`,
+    )
+    .join("");
   astOutput.textContent = "Sin AST generado.";
+  astTree.textContent = "Sin arbol generado.";
   intermediateOutput.textContent = "Sin codigo intermedio.";
+  renderCodeLines("Sin codigo intermedio.");
+}
+
+function updateCursorInfo() {
+  const cursor = sourceInput.selectionStart || 0;
+  const before = sourceInput.value.slice(0, cursor);
+  const lines = before.split("\n");
+  const line = lines.length;
+  const col = lines[lines.length - 1].length + 1;
+  cursorInfo.textContent = `Ln ${line}, Col ${col}`;
+}
+
+function compactExpression(expression) {
+  return expression.replaceAll("*", "·").replace(/\s+/g, " ");
 }
 
 function escapeHtml(value) {

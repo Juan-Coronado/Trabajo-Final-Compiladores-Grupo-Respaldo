@@ -8,49 +8,75 @@
   </head>
   <body>
     <header class="app-header">
-      <div>
+      <div class="brand">
+        <div class="brand-mark">∫</div>
         <h1>Compilador de Integrales Definidas</h1>
-        <p>Analisis lexico, sintactico, semantico, AST y evaluacion numerica.</p>
       </div>
-      <div class="header-actions">
-        <button id="exampleBtn" class="ghost-button" type="button">Ejemplo</button>
-        <button id="clearBtn" class="ghost-button" type="button">Limpiar</button>
-        <button id="analyzeBtn" class="primary-button" type="button">Analizar</button>
-      </div>
+      <nav class="top-nav" aria-label="Navegacion principal">
+        <a href="#tokensSection">Documentacion</a>
+        <a href="#grammarInfo">Gramatica</a>
+        <a href="#errorsSection">Ayuda</a>
+        <a href="#grammarInfo">Acerca de</a>
+      </nav>
     </header>
 
     <main class="workspace">
       <section class="editor-panel">
         <div class="panel-title">
-          <h2>Entrada</h2>
-          <span class="syntax-label">Formato: INT[limiteA,limiteB](expresion) dx</span>
+          <h2>Entrada (lenguaje de integrales)</h2>
+          <span class="help-dot">?</span>
         </div>
-        <textarea id="sourceInput" spellcheck="false">INT[0,1](x^2 + sin(x)) dx</textarea>
-        <div class="input-help">
-          Funciones permitidas: sin, cos, tan, ln, sqrt, exp. Constantes: pi, e.
+        <div class="editor-shell">
+          <div class="line-gutter">1</div>
+          <textarea id="sourceInput" spellcheck="false">INT[0,1](x^2 + sin(x)) dx</textarea>
+        </div>
+        <div class="editor-footer">
+          <div class="editor-actions">
+            <button id="analyzeBtn" class="primary-button" type="button">
+              <span class="play-icon">▶</span>
+              Analizar
+            </button>
+            <button id="exampleBtn" class="ghost-button" type="button">Ejemplo</button>
+            <button id="clearBtn" class="ghost-button" type="button">Limpiar</button>
+          </div>
+          <span id="cursorInfo">Ln 1, Col 1</span>
         </div>
       </section>
 
       <section class="status-grid" aria-label="Estados del compilador">
         <article class="status-card" data-phase="lexico">
-          <span>Lexico</span>
+          <div class="status-head">
+            <span class="check-dot">✓</span>
+            <h2>Lexico</h2>
+          </div>
           <strong id="lexStatus">Sin ejecutar</strong>
+          <p id="lexDetail">Esperando tokens</p>
         </article>
         <article class="status-card" data-phase="sintactico">
-          <span>Sintactico</span>
+          <div class="status-head">
+            <span class="check-dot">✓</span>
+            <h2>Sintactico</h2>
+          </div>
           <strong id="syntaxStatus">Sin ejecutar</strong>
+          <p id="syntaxDetail">Estructura pendiente</p>
         </article>
         <article class="status-card" data-phase="semantico">
-          <span>Semantico</span>
+          <div class="status-head">
+            <span class="check-dot">✓</span>
+            <h2>Semantico</h2>
+          </div>
           <strong id="semanticStatus">Sin ejecutar</strong>
+          <p id="semanticDetail">Dominio pendiente</p>
         </article>
         <article class="status-card result-card">
-          <span>Resultado</span>
+          <h2>Resultado</h2>
+          <div id="resultFormula" class="result-formula">∫ f(x) dx</div>
           <strong id="resultStatus">Pendiente</strong>
+          <p id="resultDetail">Resultado decimal</p>
         </article>
       </section>
 
-      <section class="output-panel tokens-panel">
+      <section id="tokensSection" class="output-panel tokens-panel">
         <div class="panel-title">
           <h2>Tokens reconocidos</h2>
           <span id="tokenCount">0 tokens</span>
@@ -59,6 +85,7 @@
           <table>
             <thead>
               <tr>
+                <th>#</th>
                 <th>Tipo</th>
                 <th>Lexema</th>
                 <th>Linea</th>
@@ -67,39 +94,102 @@
             </thead>
             <tbody id="tokensBody">
               <tr>
-                <td colspan="4" class="empty">Ejecuta el analisis para ver tokens.</td>
+                <td colspan="5" class="empty">Ejecuta el analisis para ver tokens.</td>
               </tr>
             </tbody>
           </table>
         </div>
       </section>
 
-      <section class="output-panel errors-panel">
+      <section id="errorsSection" class="output-panel errors-panel">
         <div class="panel-title">
-          <h2>Errores</h2>
+          <h2>Errores <span id="errorBadge" class="badge">0</span></h2>
           <span id="errorCount">Sin errores</span>
         </div>
         <div id="errorsList" class="error-list">
-          <p class="empty">No hay errores porque aun no se ejecuto el compilador.</p>
+          <article class="phase-error-card pending">
+            <div><strong>Lexicos (0)</strong><span>⌄</span></div>
+            <p>No hay errores lexicos.</p>
+          </article>
+          <article class="phase-error-card pending">
+            <div><strong>Sintacticos (0)</strong><span>⌄</span></div>
+            <p>No hay errores sintacticos.</p>
+          </article>
+          <article class="phase-error-card pending">
+            <div><strong>Semanticos (0)</strong><span>⌄</span></div>
+            <p>No hay errores semanticos.</p>
+          </article>
         </div>
       </section>
 
       <section class="output-panel ast-panel">
         <div class="panel-title">
-          <h2>AST</h2>
-          <span>Arbol de sintaxis abstracta</span>
+          <h2>AST (Arbol de Sintaxis Abstracta)</h2>
+          <button id="copyAstBtn" class="icon-button" type="button" aria-label="Copiar AST">□</button>
         </div>
-        <pre id="astOutput" class="code-block">Sin AST generado.</pre>
+        <div id="astTree" class="ast-tree empty">Sin arbol generado.</div>
+        <div class="ast-tabs">
+          <button id="treeTab" class="tab-button active" type="button">Arbol visual</button>
+          <button id="jsonTab" class="tab-button" type="button">JSON</button>
+        </div>
+        <pre id="astOutput" class="code-block hidden">Sin AST generado.</pre>
       </section>
 
       <section class="output-panel intermediate-panel">
         <div class="panel-title">
           <h2>Codigo intermedio</h2>
-          <span>Representacion normalizada</span>
+          <button id="copyIntermediateBtn" class="icon-button" type="button" aria-label="Copiar codigo intermedio">□</button>
         </div>
-        <pre id="intermediateOutput" class="code-block">Sin codigo intermedio.</pre>
+        <div class="numbered-code">
+          <div id="codeLines" class="code-lines">1</div>
+          <pre id="intermediateOutput" class="code-block">Sin codigo intermedio.</pre>
+        </div>
+      </section>
+
+      <section id="grammarInfo" class="info-strip">
+        <article>
+          <strong>∑</strong>
+          <div>
+            <h3>Funciones permitidas</h3>
+            <p>sin, cos, tan, ln, sqrt, exp</p>
+          </div>
+        </article>
+        <article>
+          <strong>π</strong>
+          <div>
+            <h3>Constantes</h3>
+            <p>pi, e</p>
+          </div>
+        </article>
+        <article>
+          <strong>i</strong>
+          <div>
+            <h3>Operadores</h3>
+            <p>+, -, *, /, ^, ( )</p>
+          </div>
+        </article>
+        <article>
+          <strong>∫</strong>
+          <div>
+            <h3>Sintaxis general</h3>
+            <p>INT[a,b](expresion) dx</p>
+          </div>
+        </article>
+        <article>
+          <strong>▣</strong>
+          <div>
+            <h3>Ejemplo</h3>
+            <p>INT[0,π](sin(x)) dx</p>
+          </div>
+        </article>
       </section>
     </main>
+
+    <footer class="app-footer">
+      <span>Compilador de Integrales Definidas</span>
+      <span>Proyecto de Compiladores</span>
+      <span>Grupo Respaldo</span>
+    </footer>
 
     <script src="{{ url_for('static', filename='app.js') }}"></script>
   </body>
