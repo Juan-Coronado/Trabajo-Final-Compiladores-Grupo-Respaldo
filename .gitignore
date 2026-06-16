@@ -1,0 +1,26 @@
+﻿# Archivos temporales del sistema
+Thumbs.db
+Desktop.ini
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Java
+*.class
+out/
+target/
+
+# C/C++
+*.o
+*.exe
+build/
+
+# IDEs
+.vscode/
+.idea/
+
+# Logs
+*.log
