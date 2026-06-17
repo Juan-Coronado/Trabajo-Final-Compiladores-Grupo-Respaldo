@@ -4,6 +4,7 @@ from .evaluator import evaluate_integral, semantic_check
 from .lexer import tokenize
 from .nodes import EvaluationError
 from .parser import Parser
+from .symbolic import exact_integral
 from .tokens import CompilerError
 
 
@@ -24,6 +25,7 @@ def analyze_source(source: str) -> dict:
         "normalized": "",
         "intermediate": None,
         "evaluation": None,
+        "exact": None,
         "valid": False,
     }
 
@@ -52,11 +54,16 @@ def analyze_source(source: str) -> dict:
 
     try:
         evaluation = evaluate_integral(integral)
+        exact = exact_integral(integral)
         value = evaluation["value"]
         result["evaluation"] = {
             **evaluation,
             "decimal": f"{value:.10f}",
             "summary": f"Resultado aproximado: {value:.10f}",
+        }
+        result["exact"] = {
+            "expression": exact.expression,
+            "supported": exact.supported,
         }
         result["valid"] = True
     except EvaluationError as exc:

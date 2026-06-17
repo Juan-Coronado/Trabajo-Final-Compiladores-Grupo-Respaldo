@@ -18,6 +18,7 @@ const codeLines = document.querySelector("#codeLines");
 const resultStatus = document.querySelector("#resultStatus");
 const resultDetail = document.querySelector("#resultDetail");
 const resultFormula = document.querySelector("#resultFormula");
+const resultExact = document.querySelector("#resultExact");
 const cursorInfo = document.querySelector("#cursorInfo");
 const copyAstBtn = document.querySelector("#copyAstBtn");
 const copyIntermediateBtn = document.querySelector("#copyIntermediateBtn");
@@ -73,6 +74,7 @@ async function analyze() {
 
 function setLoading() {
   resultStatus.textContent = "Analizando...";
+  resultExact.textContent = "Calculando...";
   resultDetail.textContent = "Procesando fases";
 }
 
@@ -87,15 +89,20 @@ function renderResult(data) {
   renderCodeLines(intermediateText);
 
   if (data.valid && data.evaluation) {
-    resultFormula.textContent = `∫[${data.ast.lower_limit}, ${data.ast.upper_limit}] f(x) dx`;
+    resultFormula.innerHTML = renderIntegralMath(data.ast);
+    resultExact.innerHTML = formatMathText(data.exact?.expression || "No disponible");
     resultStatus.textContent = data.evaluation.decimal;
-    resultDetail.textContent = data.evaluation.method;
+    resultDetail.textContent = data.exact?.supported
+      ? `${data.evaluation.method} usada para verificacion numerica`
+      : data.evaluation.method;
   } else if (data.errors.length > 0) {
-    resultFormula.textContent = "∫ f(x) dx";
+    resultFormula.innerHTML = emptyIntegralMath();
+    resultExact.textContent = "No disponible";
     resultStatus.textContent = "Revisar errores";
     resultDetail.textContent = "El analisis no finalizo";
   } else {
-    resultFormula.textContent = "∫ f(x) dx";
+    resultFormula.innerHTML = emptyIntegralMath();
+    resultExact.textContent = "Pendiente";
     resultStatus.textContent = "Pendiente";
     resultDetail.textContent = "Resultado decimal";
   }
@@ -306,7 +313,8 @@ function renderEmpty() {
   phaseDetails.lexico.textContent = "Esperando tokens";
   phaseDetails.sintactico.textContent = "Estructura pendiente";
   phaseDetails.semantico.textContent = "Dominio pendiente";
-  resultFormula.textContent = "∫ f(x) dx";
+  resultFormula.innerHTML = emptyIntegralMath();
+  resultExact.textContent = "Pendiente";
   resultStatus.textContent = "Pendiente";
   resultDetail.textContent = "Resultado decimal";
   tokenCount.textContent = "0 tokens";
@@ -338,6 +346,51 @@ function updateCursorInfo() {
 
 function compactExpression(expression) {
   return expression.replaceAll("*", "·").replace(/\s+/g, " ");
+}
+
+function emptyIntegralMath() {
+  return `<span class="integral-symbol">∫</span><span class="integrand">f(x)</span><span>dx</span>`;
+}
+
+function renderIntegralMath(ast) {
+  return `<span class="integral-block">
+    <span class="integral-symbol">∫</span>
+    <span class="limits"><sup>${escapeHtml(ast.upper_limit)}</sup><sub>${escapeHtml(ast.lower_limit)}</sub></span>
+  </span>
+  <span class="integrand">${mathFromAst(ast.expression)}</span>
+  <span class="dx">dx</span>`;
+}
+
+function mathFromAst(node) {
+  if (!node) return "";
+  if (node.type === "Number") return escapeHtml(node.value);
+  if (node.type === "Variable") return "x";
+  if (node.type === "Constant") return escapeHtml(node.name).replaceAll("pi", "π");
+  if (node.type === "FunctionCall") return `${escapeHtml(node.name)}(${mathFromAst(node.argument)})`;
+  if (node.type === "UnaryExpression") return `${escapeHtml(node.operator)}${mathFromAst(node.operand)}`;
+  if (node.type === "BinaryExpression") {
+    const left = mathFromAst(node.left);
+    const right = mathFromAst(node.right);
+    if (node.operator === "^") return `${wrapMath(node.left, left)}<sup>${right}</sup>`;
+    if (node.operator === "*") return `${wrapMath(node.left, left)} · ${wrapMath(node.right, right)}`;
+    if (node.operator === "/") return `<span class="fraction"><span>${left}</span><span>${right}</span></span>`;
+    return `${left} ${escapeHtml(node.operator)} ${right}`;
+  }
+  return escapeHtml(node.type);
+}
+
+function wrapMath(node, html) {
+  if (node?.type === "BinaryExpression" && ["+", "-"].includes(node.operator)) {
+    return `(${html})`;
+  }
+  return html;
+}
+
+function formatMathText(value) {
+  return escapeHtml(value)
+    .replaceAll("pi", "π")
+    .replace(/([A-Za-zπ0-9)]+)\^([0-9]+)/g, "$1<sup>$2</sup>")
+    .replace(/\*/g, " · ");
 }
 
 function escapeHtml(value) {

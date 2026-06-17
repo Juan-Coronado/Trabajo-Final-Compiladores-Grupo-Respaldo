@@ -22,6 +22,8 @@ class CompilerTests(unittest.TestCase):
         self.assertEqual(result["ast"]["type"], "DefiniteIntegral")
         expected = 1 / 3 + (1 - math.cos(1))
         self.assertLess(abs(result["evaluation"]["value"] - expected), 1e-6)
+        self.assertTrue(result["exact"]["supported"])
+        self.assertEqual(result["exact"]["expression"], "1/3 - cos(1) + 1")
 
     def test_lexical_error_reports_unknown_symbol(self):
         result = analyze_source("INT[0,1](x^2 @ sin(x)) dx")
