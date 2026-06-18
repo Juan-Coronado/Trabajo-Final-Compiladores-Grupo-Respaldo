@@ -145,6 +145,9 @@ themeToggle.addEventListener("click", toggleTheme);
 document.querySelectorAll("[data-close-dialog]").forEach((button) => {
   button.addEventListener("click", () => document.querySelector(`#${button.dataset.closeDialog}`)?.close());
 });
+document.querySelectorAll("[data-open-dialog]").forEach((button) => {
+  button.addEventListener("click", () => showDialog(document.querySelector(`#${button.dataset.openDialog}`)));
+});
 examplesBody.addEventListener("click", (event) => {
   const button = event.target.closest("[data-example-index]");
   if (!button) return;
