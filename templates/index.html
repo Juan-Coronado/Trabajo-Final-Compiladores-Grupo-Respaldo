@@ -8,23 +8,63 @@
   </head>
   <body>
     <header class="app-header">
-      <div class="brand">
-        <div class="brand-mark">∫</div>
-        <h1>Compilador de Integrales Definidas</h1>
+      <div class="header-top">
+        <div class="brand">
+          <div class="brand-mark">∫</div>
+          <h1>Compilador de Integrales Definidas</h1>
+        </div>
+        <nav class="top-nav" aria-label="Navegacion principal">
+          <a href="#tokensSection">Documentacion</a>
+          <a href="#grammarInfo">Gramatica</a>
+          <a href="#errorsSection">Ayuda</a>
+          <a href="#examplesDialog">Ejemplos</a>
+        </nav>
+        <button id="themeToggle" class="theme-button" type="button" aria-label="Cambiar tema">Tema oscuro</button>
       </div>
-      <nav class="top-nav" aria-label="Navegacion principal">
-        <a href="#tokensSection">Documentacion</a>
-        <a href="#grammarInfo">Gramatica</a>
-        <a href="#errorsSection">Ayuda</a>
-        <a href="#grammarInfo">Acerca de</a>
-      </nav>
+      <section id="grammarInfo" class="quick-guide" aria-label="Guia rapida del compilador">
+        <article>
+          <strong>∑</strong>
+          <div>
+            <h3>Funciones permitidas</h3>
+            <p>sin, cos, tan, ln, sqrt, exp</p>
+          </div>
+        </article>
+        <article>
+          <strong>π</strong>
+          <div>
+            <h3>Constantes</h3>
+            <p>pi, e</p>
+          </div>
+        </article>
+        <article>
+          <strong>i</strong>
+          <div>
+            <h3>Operadores</h3>
+            <p>+, -, *, /, ^, ( )</p>
+          </div>
+        </article>
+        <article>
+          <strong>∫</strong>
+          <div>
+            <h3>Sintaxis general</h3>
+            <p>INT[a,b](expresion) dx</p>
+          </div>
+        </article>
+        <article>
+          <strong>▣</strong>
+          <div>
+            <h3>Ejemplo</h3>
+            <p>INT[0,pi](sin(x)) dx</p>
+          </div>
+        </article>
+      </section>
     </header>
 
     <main class="workspace">
       <section class="editor-panel">
         <div class="panel-title">
           <h2>Entrada (lenguaje de integrales)</h2>
-          <span class="help-dot">?</span>
+          <button id="helpBtn" class="help-dot" type="button" aria-label="Consejos de uso">?</button>
         </div>
         <div class="editor-shell">
           <div class="line-gutter">1</div>
@@ -132,7 +172,7 @@
       <section class="output-panel ast-panel">
         <div class="panel-title">
           <h2>AST (Arbol de Sintaxis Abstracta)</h2>
-          <button id="copyAstBtn" class="icon-button" type="button" aria-label="Copiar AST">□</button>
+          <button id="copyAstBtn" class="copy-button" type="button">Copiar AST</button>
         </div>
         <div id="astTree" class="ast-tree empty">Sin arbol generado.</div>
         <div class="ast-tabs">
@@ -145,7 +185,7 @@
       <section class="output-panel intermediate-panel">
         <div class="panel-title">
           <h2>Codigo intermedio</h2>
-          <button id="copyIntermediateBtn" class="icon-button" type="button" aria-label="Copiar codigo intermedio">□</button>
+          <button id="copyIntermediateBtn" class="copy-button" type="button">Copiar codigo</button>
         </div>
         <div class="numbered-code">
           <div id="codeLines" class="code-lines">1</div>
@@ -153,50 +193,47 @@
         </div>
       </section>
 
-      <section id="grammarInfo" class="info-strip">
-        <article>
-          <strong>∑</strong>
-          <div>
-            <h3>Funciones permitidas</h3>
-            <p>sin, cos, tan, ln, sqrt, exp</p>
-          </div>
-        </article>
-        <article>
-          <strong>π</strong>
-          <div>
-            <h3>Constantes</h3>
-            <p>pi, e</p>
-          </div>
-        </article>
-        <article>
-          <strong>i</strong>
-          <div>
-            <h3>Operadores</h3>
-            <p>+, -, *, /, ^, ( )</p>
-          </div>
-        </article>
-        <article>
-          <strong>∫</strong>
-          <div>
-            <h3>Sintaxis general</h3>
-            <p>INT[a,b](expresion) dx</p>
-          </div>
-        </article>
-        <article>
-          <strong>▣</strong>
-          <div>
-            <h3>Ejemplo</h3>
-            <p>INT[0,π](sin(x)) dx</p>
-          </div>
-        </article>
-      </section>
     </main>
 
-    <footer class="app-footer">
-      <span>Compilador de Integrales Definidas</span>
-      <span>Proyecto de Compiladores</span>
-      <span>Grupo Respaldo</span>
-    </footer>
+    <dialog id="examplesDialog" class="modal">
+      <div class="modal-header">
+        <div>
+          <h2>Ejemplos para probar</h2>
+          <p>Selecciona una entrada y se cargara en el compilador.</p>
+        </div>
+        <button class="modal-close" type="button" data-close-dialog="examplesDialog">Cerrar</button>
+      </div>
+      <div class="examples-table-wrap">
+        <table class="examples-table">
+          <thead>
+            <tr>
+              <th>Nivel</th>
+              <th>Integral</th>
+              <th>Que prueba</th>
+              <th>Accion</th>
+            </tr>
+          </thead>
+          <tbody id="examplesBody"></tbody>
+        </table>
+      </div>
+    </dialog>
+
+    <dialog id="helpDialog" class="modal help-modal">
+      <div class="modal-header">
+        <div>
+          <h2>Consejos de uso</h2>
+          <p>Guia breve para escribir entradas validas.</p>
+        </div>
+        <button class="modal-close" type="button" data-close-dialog="helpDialog">Cerrar</button>
+      </div>
+      <ul class="help-list">
+        <li>Usa el formato <code>INT[a,b](expresion) dx</code>.</li>
+        <li>La variable permitida es <code>x</code> y el diferencial debe ser <code>dx</code>.</li>
+        <li>Puedes usar constantes como <code>pi</code> y <code>e</code>.</li>
+        <li>Se permite multiplicacion implicita: <code>2x</code> o <code>3(x+1)</code>.</li>
+        <li>Revisa la tabla de tokens para encontrar linea y columna cuando haya errores.</li>
+      </ul>
+    </dialog>
 
     <script src="{{ url_for('static', filename='app.js') }}"></script>
   </body>

@@ -22,6 +22,89 @@ const resultExact = document.querySelector("#resultExact");
 const cursorInfo = document.querySelector("#cursorInfo");
 const copyAstBtn = document.querySelector("#copyAstBtn");
 const copyIntermediateBtn = document.querySelector("#copyIntermediateBtn");
+const helpBtn = document.querySelector("#helpBtn");
+const themeToggle = document.querySelector("#themeToggle");
+const examplesDialog = document.querySelector("#examplesDialog");
+const helpDialog = document.querySelector("#helpDialog");
+const examplesBody = document.querySelector("#examplesBody");
+
+const examples = [
+  {
+    level: "Basico",
+    source: "INT[0,1](x) dx",
+    purpose: "Variable simple y limites positivos",
+  },
+  {
+    level: "Basico",
+    source: "INT[0,1](x^2) dx",
+    purpose: "Potencia de x",
+  },
+  {
+    level: "Basico",
+    source: "INT[0,pi](sin(x)) dx",
+    purpose: "Funcion trigonometrica y constante pi",
+  },
+  {
+    level: "Basico",
+    source: "INT[0,2](3) dx",
+    purpose: "Integral de una constante",
+  },
+  {
+    level: "Basico",
+    source: "INT[0,1](x + 1) dx",
+    purpose: "Suma simple",
+  },
+  {
+    level: "Intermedio",
+    source: "INT[0,2](2x + 3(x+1)) dx",
+    purpose: "Multiplicacion implicita y parentesis",
+  },
+  {
+    level: "Intermedio",
+    source: "INT[-1,1](x^3 + x^2) dx",
+    purpose: "Limite negativo y potencias",
+  },
+  {
+    level: "Intermedio",
+    source: "INT[1,e](ln(x)) dx",
+    purpose: "Funcion logaritmica en dominio valido",
+  },
+  {
+    level: "Intermedio",
+    source: "INT[0,1](exp(x) - x) dx",
+    purpose: "Funcion exponencial y resta",
+  },
+  {
+    level: "Intermedio",
+    source: "INT[0,4](sqrt(x) + x/2) dx",
+    purpose: "Raiz cuadrada y division",
+  },
+  {
+    level: "Avanzado",
+    source: "INT[0,pi](sin(x)^2 + cos(x)^2) dx",
+    purpose: "Potencias sobre funciones",
+  },
+  {
+    level: "Avanzado",
+    source: "INT[1,3]((x^2 + 2x + 1)/(x+1)) dx",
+    purpose: "Division de expresiones",
+  },
+  {
+    level: "Avanzado",
+    source: "INT[0,1](exp(x^2) + sin(x)) dx",
+    purpose: "Funcion compuesta y evaluacion numerica",
+  },
+  {
+    level: "Avanzado",
+    source: "INT[0,0.785398](tan(x) + x^3) dx",
+    purpose: "Tangente y limite decimal",
+  },
+  {
+    level: "Avanzado",
+    source: "INT[0,2](sqrt(x+1) * exp(x/2)) dx",
+    purpose: "Composicion con producto",
+  },
+];
 
 const phaseElements = {
   lexico: document.querySelector("[data-phase='lexico']"),
@@ -42,11 +125,7 @@ const phaseDetails = {
 };
 
 analyzeBtn.addEventListener("click", analyze);
-exampleBtn.addEventListener("click", () => {
-  sourceInput.value = sampleSource;
-  updateCursorInfo();
-  analyze();
-});
+exampleBtn.addEventListener("click", () => showDialog(examplesDialog));
 clearBtn.addEventListener("click", () => {
   sourceInput.value = "";
   updateCursorInfo();
@@ -56,9 +135,27 @@ sourceInput.addEventListener("keyup", updateCursorInfo);
 sourceInput.addEventListener("click", updateCursorInfo);
 treeTab.addEventListener("click", () => setAstMode("tree"));
 jsonTab.addEventListener("click", () => setAstMode("json"));
-copyAstBtn.addEventListener("click", () => navigator.clipboard?.writeText(astOutput.textContent));
-copyIntermediateBtn.addEventListener("click", () => navigator.clipboard?.writeText(intermediateOutput.textContent));
+copyAstBtn.addEventListener("click", () => copyToClipboard(astOutput.textContent, copyAstBtn, "Copiado"));
+copyIntermediateBtn.addEventListener("click", () =>
+  copyToClipboard(intermediateOutput.textContent, copyIntermediateBtn, "Copiado"),
+);
+helpBtn.addEventListener("click", () => showDialog(helpDialog));
+themeToggle.addEventListener("click", toggleTheme);
+document.querySelectorAll("[data-close-dialog]").forEach((button) => {
+  button.addEventListener("click", () => document.querySelector(`#${button.dataset.closeDialog}`)?.close());
+});
+examplesBody.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-example-index]");
+  if (!button) return;
+  const example = examples[Number(button.dataset.exampleIndex)];
+  sourceInput.value = example.source;
+  examplesDialog.close();
+  updateCursorInfo();
+  analyze();
+});
 
+renderExamples();
+initTheme();
 updateCursorInfo();
 
 async function analyze() {
@@ -303,6 +400,52 @@ function setAstMode(mode) {
   astOutput.classList.toggle("hidden", showTree);
   treeTab.classList.toggle("active", showTree);
   jsonTab.classList.toggle("active", !showTree);
+}
+
+function renderExamples() {
+  examplesBody.innerHTML = examples
+    .map(
+      (example, index) => `<tr>
+        <td><span class="level-badge ${example.level.toLowerCase()}">${escapeHtml(example.level)}</span></td>
+        <td><code>${escapeHtml(example.source)}</code></td>
+        <td>${escapeHtml(example.purpose)}</td>
+        <td><button class="table-action" type="button" data-example-index="${index}">Usar</button></td>
+      </tr>`,
+    )
+    .join("");
+}
+
+function showDialog(dialog) {
+  if (typeof dialog.showModal === "function") {
+    dialog.showModal();
+  } else {
+    dialog.setAttribute("open", "open");
+  }
+}
+
+async function copyToClipboard(text, button, message) {
+  await navigator.clipboard?.writeText(text);
+  const original = button.textContent;
+  button.textContent = message;
+  window.setTimeout(() => {
+    button.textContent = original;
+  }, 1200);
+}
+
+function initTheme() {
+  const savedTheme = localStorage.getItem("integralCompilerTheme") || "light";
+  document.body.classList.toggle("dark-theme", savedTheme === "dark");
+  updateThemeButton();
+}
+
+function toggleTheme() {
+  document.body.classList.toggle("dark-theme");
+  localStorage.setItem("integralCompilerTheme", document.body.classList.contains("dark-theme") ? "dark" : "light");
+  updateThemeButton();
+}
+
+function updateThemeButton() {
+  themeToggle.textContent = document.body.classList.contains("dark-theme") ? "Tema claro" : "Tema oscuro";
 }
 
 function renderEmpty() {

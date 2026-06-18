@@ -44,8 +44,8 @@ templates/index.html
 static/styles.css
 static/app.js
 tests/test_compiler.py
-docs/gramatica.md
-examples/entradas.txt
+docs/Gramatica del compilador.md
+examples/Entradas de prueba.txt
 ```
 
 ## Ejecucion local
@@ -71,3 +71,6 @@ python -m unittest discover tests
 
 - Version 1: estructura inicial del repositorio.
 - Version 2: compilador web para integrales definidas.
+- Version 3: rediseño visual del compilador.
+- Version 4: resultado exacto en la interfaz.
+- Version 5: ejemplos guiados, ayuda, tema claro/oscuro y nombres de documentos.
