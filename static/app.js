@@ -18,6 +18,7 @@ const codeLines = document.querySelector("#codeLines");
 const resultStatus = document.querySelector("#resultStatus");
 const resultDetail = document.querySelector("#resultDetail");
 const resultFormula = document.querySelector("#resultFormula");
+const resultExactLabel = document.querySelector("#resultExactLabel");
 const resultExact = document.querySelector("#resultExact");
 const cursorInfo = document.querySelector("#cursorInfo");
 const copyAstBtn = document.querySelector("#copyAstBtn");
@@ -171,6 +172,7 @@ async function analyze() {
 
 function setLoading() {
   resultStatus.textContent = "Analizando...";
+  resultExactLabel.textContent = "Resultado exacto:";
   resultExact.textContent = "Calculando...";
   resultDetail.textContent = "Procesando fases";
 }
@@ -187,18 +189,26 @@ function renderResult(data) {
 
   if (data.valid && data.evaluation) {
     resultFormula.innerHTML = renderIntegralMath(data.ast);
-    resultExact.innerHTML = formatMathText(data.exact?.expression || "No disponible");
+    if (data.exact?.supported) {
+      resultExactLabel.textContent = "Resultado exacto:";
+      resultExact.innerHTML = formatMathText(data.exact.expression);
+    } else {
+      resultExactLabel.textContent = "Evaluacion usada:";
+      resultExact.textContent = "Metodo numerico (Simpson)";
+    }
     resultStatus.textContent = data.evaluation.decimal;
     resultDetail.textContent = data.exact?.supported
       ? `${data.evaluation.method} usada para verificacion numerica`
-      : data.evaluation.method;
+      : "No se encontro forma exacta con las reglas simbolicas disponibles.";
   } else if (data.errors.length > 0) {
     resultFormula.innerHTML = emptyIntegralMath();
-    resultExact.textContent = "No disponible";
+    resultExactLabel.textContent = "Resultado exacto:";
+    resultExact.textContent = "No calculado";
     resultStatus.textContent = "Revisar errores";
     resultDetail.textContent = "El analisis no finalizo";
   } else {
     resultFormula.innerHTML = emptyIntegralMath();
+    resultExactLabel.textContent = "Resultado exacto:";
     resultExact.textContent = "Pendiente";
     resultStatus.textContent = "Pendiente";
     resultDetail.textContent = "Resultado decimal";
@@ -457,6 +467,7 @@ function renderEmpty() {
   phaseDetails.sintactico.textContent = "Estructura pendiente";
   phaseDetails.semantico.textContent = "Dominio pendiente";
   resultFormula.innerHTML = emptyIntegralMath();
+  resultExactLabel.textContent = "Resultado exacto:";
   resultExact.textContent = "Pendiente";
   resultStatus.textContent = "Pendiente";
   resultDetail.textContent = "Resultado decimal";

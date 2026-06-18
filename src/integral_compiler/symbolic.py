@@ -16,7 +16,7 @@ class ExactIntegral:
 def exact_integral(integral: IntegralNode) -> ExactIntegral:
     terms = definite_terms(integral.expression, bound_label(integral.lower_raw), bound_label(integral.upper_raw))
     if terms is None:
-        return ExactIntegral("No disponible para esta expresion", False)
+        return ExactIntegral("Metodo numerico (Simpson)", False)
     return ExactIntegral(join_terms(terms), True)
 
 
