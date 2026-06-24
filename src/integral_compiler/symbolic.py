@@ -22,6 +22,8 @@ def exact_integral(integral: IntegralNode) -> ExactIntegral:
 
 def definite_terms(node: Node, lower: str, upper: str) -> list[tuple[int, str]] | None:
     if isinstance(node, BinaryNode):
+        if is_trig_identity_sum(node):
+            return constant_definite_terms("1", lower, upper)
         if node.operator == "+":
             left = definite_terms(node.left, lower, upper)
             right = definite_terms(node.right, lower, upper)
@@ -77,7 +79,59 @@ def definite_terms(node: Node, lower: str, upper: str) -> list[tuple[int, str]] 
             return clean_terms([(1, function_at("sin", upper)), (-1, function_at("sin", lower))])
         if name == "exp":
             return clean_terms([(1, function_at("exp", upper)), (-1, function_at("exp", lower))])
+        if name == "sqrt":
+            return clean_terms([(1, definite_difference(sqrt_antiderivative, lower, upper))])
+        if name == "ln":
+            return clean_terms([(1, definite_difference(ln_antiderivative, lower, upper))])
     return None
+
+
+def is_trig_identity_sum(node: BinaryNode) -> bool:
+    if node.operator != "+":
+        return False
+    names = {trig_square_name(node.left), trig_square_name(node.right)}
+    return names == {"sin", "cos"}
+
+
+def trig_square_name(node: Node) -> str | None:
+    if not isinstance(node, BinaryNode) or node.operator != "^":
+        return None
+    exponent = integer_number(node.right)
+    if exponent != 2:
+        return None
+    if isinstance(node.left, FunctionNode) and is_plain_x(node.left.argument):
+        name = node.left.name.lower()
+        if name in {"sin", "cos"}:
+            return name
+    return None
+
+
+def definite_difference(antiderivative, lower: str, upper: str) -> str:
+    upper_text = antiderivative(upper)
+    lower_text = antiderivative(lower)
+    if is_zero(lower_text):
+        return upper_text
+    if is_zero(upper_text):
+        if lower_text.startswith("-"):
+            return lower_text[1:]
+        return f"-({lower_text})"
+    return f"({upper_text} - {lower_text})"
+
+
+def sqrt_antiderivative(value: str) -> str:
+    if is_zero(value):
+        return "0"
+    return f"2*{power_at(value, '3/2')}/3"
+
+
+def ln_antiderivative(value: str) -> str:
+    clean = value.strip()
+    if is_one(clean):
+        return "-1"
+    lowered = clean.lower()
+    if lowered == "e":
+        return "0"
+    return f"{clean}*ln({clean}) - {clean}"
 
 
 def power_terms(exponent: int, lower: str, upper: str) -> list[tuple[int, str]]:
@@ -186,13 +240,15 @@ def fraction_text(value: str, denominator: str) -> str | None:
     return f"{fraction.numerator}/{fraction.denominator}"
 
 
-def power_at(value: str, exponent: int) -> str:
+def power_at(value: str, exponent: int | str) -> str:
     if is_zero(value):
         return "0"
     if is_one(value):
         return "1"
     if exponent == 1:
         return value
+    if isinstance(exponent, str):
+        return f"{value}^({exponent})"
     return f"{value}^{exponent}"
 
 

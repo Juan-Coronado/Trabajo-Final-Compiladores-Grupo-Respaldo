@@ -52,6 +52,30 @@ class CompilerTests(unittest.TestCase):
         self.assertTrue(result["valid"])
         self.assertLess(abs(result["evaluation"]["value"] - 16), 1e-6)
 
+    def test_academic_report_generates_graphviz_diagrams(self):
+        result = analyze_source("INT[0,pi](sin(x)^2 + cos(x)^2) dx")
+
+        self.assertTrue(result["valid"])
+        automata = result["academic"]["automata"]
+        syntax_tree = result["academic"]["syntax_tree"]
+        self.assertIn("digraph AFN_generado", automata["nfa"]["dot"])
+        self.assertIn("digraph AFD_generado", automata["dfa"]["dot"])
+        self.assertIn("digraph ArbolSintactico", syntax_tree["dot"])
+        self.assertGreater(len(automata["nfa"]["states"]), 10)
+        self.assertGreater(len(syntax_tree["dot"]), 100)
+
+    def test_more_exact_integrals_are_supported(self):
+        trig = analyze_source("INT[0,pi](sin(x)^2 + cos(x)^2) dx")
+        root = analyze_source("INT[0,4](sqrt(x)) dx")
+        log = analyze_source("INT[1,e](ln(x)) dx")
+
+        self.assertTrue(trig["exact"]["supported"])
+        self.assertEqual(trig["exact"]["expression"], "π")
+        self.assertTrue(root["exact"]["supported"])
+        self.assertIn("4^(3/2)", root["exact"]["expression"])
+        self.assertTrue(log["exact"]["supported"])
+        self.assertEqual(log["exact"]["expression"], "1")
+
 
 if __name__ == "__main__":
     unittest.main()

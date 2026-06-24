@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .academic import build_academic_report
 from .evaluator import evaluate_integral, semantic_check
 from .lexer import tokenize
 from .nodes import EvaluationError
@@ -26,8 +27,11 @@ def analyze_source(source: str) -> dict:
         "intermediate": None,
         "evaluation": None,
         "exact": None,
+        "academic": None,
         "valid": False,
     }
+
+    result["academic"] = build_academic_report(result["tokens"], None, source)
 
     if lexical_errors:
         result["phases"]["sintactico"] = skipped_state("Analisis omitido porque existen errores lexicos.")
@@ -48,6 +52,7 @@ def analyze_source(source: str) -> dict:
     result["ast"] = integral.to_dict()
     result["normalized"] = integral.normalized()
     result["intermediate"] = integral.intermediate_code()
+    result["academic"] = build_academic_report(result["tokens"], result["ast"], source)
 
     if semantic_errors:
         return result

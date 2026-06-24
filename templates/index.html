@@ -11,17 +11,26 @@
       <div class="header-top">
         <div class="brand">
           <div class="brand-mark">∫</div>
-          <h1>Compilador de Integrales Definidas</h1>
+          <div>
+            <h1>Compilador de Integrales Definidas</h1>
+            <p class="brand-purpose">
+              Entrada de una integral, validacion lexica/sintactica/semantica, traduccion a Python y resultado matematico.
+            </p>
+          </div>
         </div>
         <nav class="top-nav" aria-label="Navegacion principal">
           <ul>
             <li><a href="#tokensSection">Documentacion</a></li>
             <li><a href="#grammarInfo">Gramatica</a></li>
+            <li><a href="#automataSection">Automatas</a></li>
             <li><button class="nav-link" type="button" data-open-dialog="helpDialog">Ayuda</button></li>
             <li><button class="nav-link" type="button" data-open-dialog="examplesDialog">Ejemplos</button></li>
           </ul>
         </nav>
-        <button id="themeToggle" class="theme-button" type="button" aria-label="Cambiar tema">Tema oscuro</button>
+        <div class="header-actions">
+          <button id="downloadPdfBtn" class="pdf-button" type="button">Descargar PDF</button>
+          <button id="themeToggle" class="theme-button" type="button" aria-label="Cambiar tema">Tema oscuro</button>
+        </div>
       </div>
       <section id="grammarInfo" class="quick-guide" aria-label="Guia rapida del compilador">
         <article>
@@ -118,9 +127,35 @@
         </article>
       </section>
 
+      <section id="lexemesSection" class="output-panel tokens-panel">
+        <div class="panel-title">
+          <h2>Lexemas identificados</h2>
+          <span id="lexemeCount">0 lexemas</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Lexema</th>
+                <th>Categoria</th>
+                <th>Token</th>
+                <th>Linea</th>
+                <th>Columna</th>
+              </tr>
+            </thead>
+            <tbody id="lexemesBody">
+              <tr>
+                <td colspan="6" class="empty">Ejecuta el analisis para ver lexemas.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section id="tokensSection" class="output-panel tokens-panel">
         <div class="panel-title">
-          <h2>Tokens reconocidos</h2>
+          <h2>Tokens agrupados</h2>
           <span id="tokenCount">0 tokens</span>
         </div>
         <div class="table-wrap">
@@ -128,15 +163,40 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th>Tipo</th>
-                <th>Lexema</th>
-                <th>Linea</th>
-                <th>Columna</th>
+                <th>Token</th>
+                <th>Descripcion</th>
+                <th>Lexemas agrupados</th>
+                <th>Cantidad</th>
               </tr>
             </thead>
             <tbody id="tokensBody">
               <tr>
-                <td colspan="5" class="empty">Ejecuta el analisis para ver tokens.</td>
+                <td colspan="5" class="empty">Ejecuta el analisis para ver tokens agrupados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="regexSection" class="output-panel tokens-panel">
+        <div class="panel-title">
+          <h2>Expresiones regulares aplicadas</h2>
+          <span id="regexCount">0 reglas</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Token</th>
+                <th>Regex</th>
+                <th>Que reconoce</th>
+                <th>Ejemplo</th>
+              </tr>
+            </thead>
+            <tbody id="regexBody">
+              <tr>
+                <td colspan="5" class="empty">Ejecuta el analisis para ver expresiones regulares.</td>
               </tr>
             </tbody>
           </table>
@@ -166,25 +226,99 @@
 
       <section class="output-panel ast-panel">
         <div class="panel-title">
-          <h2>AST (Arbol de Sintaxis Abstracta)</h2>
-          <button id="copyAstBtn" class="copy-button" type="button">Copiar AST</button>
+          <h2>Arbol sintactico grafico</h2>
+          <div class="panel-actions">
+            <button id="treeZoomOutBtn" class="icon-button" type="button" title="Alejar arbol">-</button>
+            <button id="treeZoomResetBtn" class="icon-button" type="button" title="Restablecer arbol">1:1</button>
+            <button id="treeZoomInBtn" class="icon-button" type="button" title="Acercar arbol">+</button>
+            <button id="downloadTreeBtn" class="copy-button" type="button">Descargar arbol</button>
+            <button id="copyAstBtn" class="copy-button" type="button">Copiar Python</button>
+          </div>
         </div>
         <div id="astTree" class="ast-tree empty">Sin arbol generado.</div>
         <div class="ast-tabs">
           <button id="treeTab" class="tab-button active" type="button">Arbol visual</button>
-          <button id="jsonTab" class="tab-button" type="button">JSON</button>
+          <button id="jsonTab" class="tab-button" type="button">Python</button>
         </div>
-        <pre id="astOutput" class="code-block hidden">Sin AST generado.</pre>
+        <pre id="astOutput" class="code-block hidden">Sin traduccion generada.</pre>
       </section>
 
-      <section class="output-panel intermediate-panel">
+      <section id="automataSection" class="output-panel automata-panel">
         <div class="panel-title">
-          <h2>Codigo intermedio</h2>
-          <button id="copyIntermediateBtn" class="copy-button" type="button">Copiar codigo</button>
+          <h2>AFN y AFD generados por la integral</h2>
+          <span id="automataSummary">Diagramas dinamicos</span>
         </div>
-        <div class="numbered-code">
-          <div id="codeLines" class="code-lines">1</div>
-          <pre id="intermediateOutput" class="code-block">Sin codigo intermedio.</pre>
+        <div class="automata-toolbar">
+          <div class="automata-switch" role="group" aria-label="Cambiar diagrama">
+            <button id="nfaToggle" class="automata-toggle active" type="button" data-automata-kind="nfa">AFN</button>
+            <button id="dfaToggle" class="automata-toggle" type="button" data-automata-kind="dfa">AFD</button>
+          </div>
+          <div class="diagram-actions">
+            <button id="automataZoomOutBtn" class="icon-button" type="button" title="Alejar automata">-</button>
+            <button id="automataZoomResetBtn" class="icon-button" type="button" title="Restablecer automata">1:1</button>
+            <button id="automataZoomInBtn" class="icon-button" type="button" title="Acercar automata">+</button>
+            <button id="downloadAutomataBtn" class="copy-button" type="button">Descargar SVG</button>
+          </div>
+          <span id="automataHint">El diagrama se regenera al analizar una integral distinta.</span>
+        </div>
+        <article class="diagram-card automata-viewer">
+          <h3 id="automataTitle">AFN</h3>
+          <div id="automataGraph" class="graph-canvas empty">Sin AFN generado.</div>
+        </article>
+        <div class="panel-title compact-title">
+          <h2>Tabla de transicion del AFD</h2>
+          <span id="transitionCount">0 transiciones</span>
+        </div>
+        <div class="table-wrap transition-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Estado</th>
+                <th>Entrada esperada</th>
+                <th>Siguiente estado</th>
+                <th>Aceptacion</th>
+              </tr>
+            </thead>
+            <tbody id="transitionBody">
+              <tr>
+                <td colspan="5" class="empty">Ejecuta el analisis para ver la tabla.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="grammarSection" class="output-panel grammar-panel">
+        <div class="panel-title">
+          <h2>Gramatica Libre de Contexto</h2>
+          <span id="grammarDefinition">G = (V, T, P, S)</span>
+        </div>
+        <div class="grammar-grid">
+          <article>
+            <h3>Variables V</h3>
+            <p id="grammarVariables">Pendiente</p>
+          </article>
+          <article>
+            <h3>Terminales T</h3>
+            <p id="grammarTerminals">Pendiente</p>
+          </article>
+          <article>
+            <h3>Simbolo inicial S</h3>
+            <p id="grammarStart">Pendiente</p>
+          </article>
+          <article>
+            <h3>Categorias usadas</h3>
+            <p id="grammarApplies">Pendiente</p>
+          </article>
+          <article>
+            <h3>No aplican directamente</h3>
+            <p id="grammarNotApplies">Pendiente</p>
+          </article>
+        </div>
+        <div class="productions-box">
+          <h3>Producciones P</h3>
+          <pre id="grammarProductions">Ejecuta el analisis para ver la gramatica.</pre>
         </div>
       </section>
 
@@ -226,10 +360,12 @@
         <li>La variable permitida es <code>x</code> y el diferencial debe ser <code>dx</code>.</li>
         <li>Puedes usar constantes como <code>pi</code> y <code>e</code>.</li>
         <li>Se permite multiplicacion implicita: <code>2x</code> o <code>3(x+1)</code>.</li>
-        <li>Revisa la tabla de tokens para encontrar linea y columna cuando haya errores.</li>
+        <li>Revisa la tabla de lexemas para encontrar linea y columna cuando haya errores.</li>
       </ul>
     </dialog>
 
+    <script src="{{ url_for('static', filename='vendor/viz.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/full.render.js') }}"></script>
     <script src="{{ url_for('static', filename='app.js') }}"></script>
   </body>
 </html>
